@@ -82,9 +82,13 @@ export function BrowserFrame({ url }: Props) {
           title="Remote View"
           referrerPolicy="no-referrer"
         />
-        <div className="absolute top-4 right-4 pointer-events-none">
-           <div className="bg-indigo-600 text-white border-2 border-black p-2 rounded-xl text-[8px] font-black uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-             Sandbox Active
+        <div className="absolute inset-0 pointer-events-none flex items-center justify-center p-8 text-center bg-black/5 opacity-0 hover:opacity-100 transition-opacity">
+           <div className="bg-white border-2 border-black p-4 rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] max-w-xs pointer-events-auto">
+             <p className="text-[10px] font-black uppercase text-red-500 mb-1">Security Restriction</p>
+             <p className="text-[10px] font-bold text-slate-600">
+               Some sites (like GitHub or Google) block embedding. 
+               The background pings WILL still work to keep them awake!
+             </p>
            </div>
         </div>
       </div>
