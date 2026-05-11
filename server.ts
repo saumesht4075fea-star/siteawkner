@@ -57,6 +57,15 @@ async function startServer() {
     res.json(list);
   });
 
+  // Self-Wakeup: Ping itself every 10 minutes to prevent Cloud Run sleep
+  const selfUrl = process.env.APP_URL;
+  if (selfUrl) {
+    setInterval(() => {
+      console.log(`[UpKeep] Self-pinging to stay awake: ${selfUrl}`);
+      fetch(`${selfUrl}/api/ping`).catch(() => {});
+    }, 10 * 60 * 1000);
+  }
+
   app.post("/api/monitors", (req, res) => {
     const { url, interval } = req.body;
     if (!url) return res.status(400).json({ error: "URL is required" });
@@ -86,6 +95,18 @@ async function startServer() {
 
     const { timer, ...safeMonitor } = monitor;
     res.json(safeMonitor);
+  });
+
+  app.post("/api/monitors/:id/ping", async (req, res) => {
+    const { id } = req.params;
+    const monitor = monitors.get(id);
+    if (monitor) {
+      await pingUrl(id);
+      const { timer, ...safeMonitor } = monitor;
+      res.json(safeMonitor);
+    } else {
+      res.status(404).json({ error: "Monitor not found" });
+    }
   });
 
   app.delete("/api/monitors/:id", (req, res) => {

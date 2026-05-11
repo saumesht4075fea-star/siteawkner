@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from "motion/react";
 export default function App() {
   const [monitors, setMonitors] = useState<Monitor[]>([]);
   const [newUrl, setNewUrl] = useState("");
-  const [newInterval] = useState(14); // Default 14m to stay under 15m sleep
+  const [newInterval] = useState(10); // Default 10m to stay under 15m sleep
   const [selectedUrl, setSelectedUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -52,6 +52,20 @@ export default function App() {
     }
   };
 
+  const forceWakeup = async () => {
+    const selectedMonitor = monitors.find(m => m.url === selectedUrl);
+    if (!selectedMonitor) return;
+    setIsLoading(true);
+    try {
+      await fetch(`/api/monitors/${selectedMonitor.id}/ping`, { method: "POST" });
+      await fetchMonitors(); // Refresh status
+    } catch (err) {
+      console.error("Force wakeup failed", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const deleteMonitor = async (id: string) => {
     try {
       const monitorToDelete = monitors.find(m => m.id === id);
@@ -77,9 +91,15 @@ export default function App() {
             WAKEUP.IO
           </h1>
         </div>
-        <div className="bg-white border-2 border-black rounded-full px-4 py-1.5 flex items-center gap-3 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
-          <div className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse"></div>
-          <span className="font-bold uppercase text-[10px] tracking-widest">Service Active</span>
+        <div className="flex items-center gap-3">
+          <div className="hidden sm:flex bg-indigo-900/20 border-2 border-black rounded-full px-4 py-1.5 items-center gap-3 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+            <div className="w-2.5 h-2.5 bg-blue-400 rounded-full animate-pulse"></div>
+            <span className="font-black uppercase text-[9px] tracking-widest text-white">Self-Wake: Active</span>
+          </div>
+          <div className="bg-white border-2 border-black rounded-full px-4 py-1.5 flex items-center gap-3 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+            <div className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse"></div>
+            <span className="font-bold uppercase text-[10px] tracking-widest">Service Online</span>
+          </div>
         </div>
       </header>
 
@@ -142,6 +162,16 @@ export default function App() {
         <div className="flex-1 flex flex-col gap-4 min-h-0">
           {/* Browser Container */}
           <div className="flex-1 bg-white border-4 border-black rounded-3xl shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] overflow-hidden flex flex-col relative min-h-0">
+            <div className="bg-slate-100 border-b-2 border-black p-2 px-4 flex items-center justify-between">
+              <span className="text-[9px] font-black uppercase text-slate-500">Node Status: {selectedUrl ? 'Connected' : 'Idle'}</span>
+              <button 
+                onClick={forceWakeup}
+                disabled={isLoading || !selectedUrl}
+                className="bg-indigo-600 text-white text-[9px] font-black uppercase px-3 py-1 rounded-lg border border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-y-0.5 transition-all disabled:opacity-50"
+              >
+                {isLoading ? 'HANDSHAKING...' : 'FORCE WAKEUP'}
+              </button>
+            </div>
             {selectedUrl ? (
               <BrowserFrame url={selectedUrl} />
             ) : (
@@ -158,27 +188,35 @@ export default function App() {
           </div>
 
           {/* Activity Logs Card */}
-          <div className="h-32 bg-teal-300 border-4 border-black rounded-2xl shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] p-3 flex flex-col">
+          <div className="h-44 bg-teal-300 border-4 border-black rounded-2xl shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] p-3 flex flex-col">
             <h4 className="text-[10px] font-black uppercase mb-1.5 flex items-center justify-between">
               Live Network Handshake
-              <Activity size={12} />
+              <div className="flex items-center gap-2 bg-black/10 px-2 rounded-full py-0.5">
+                <div className="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-pulse" />
+                <span className="text-[8px]">Server-Side Active</span>
+              </div>
             </h4>
             <div className="flex-1 overflow-y-auto space-y-1 font-mono text-[9px] leading-tight text-indigo-900 pr-1 custom-scrollbar">
               {monitors.map((m, idx) => (
-                <div key={`${m.id}-log-${idx}`} className="flex gap-2 border-b border-black/5 pb-1 last:border-0">
-                  <span className="opacity-60 text-[8px]">[{m.lastPingTime ? new Date(m.lastPingTime).toLocaleTimeString() : 'WAIT'}]</span>
-                  <span className={`font-black ${m.lastPingStatus === 200 ? 'text-green-700' : 'text-red-700'}`}>
-                    {m.lastPingStatus === 200 ? 'ALIVE' : m.lastPingStatus === 0 ? 'FAIL' : 'PENDING'}
+                <div key={`${m.id}-log-${idx}`} className="flex gap-2 border-b border-black/5 pb-1 last:border-0 items-center">
+                  <span className="opacity-60 text-[8px] whitespace-nowrap">[{m.lastPingTime ? new Date(m.lastPingTime).toLocaleTimeString() : 'WAIT'}]</span>
+                  <span className={`font-black shrink-0 ${m.lastPingStatus === 200 ? 'text-green-700' : 'text-red-700'}`}>
+                    {m.lastPingStatus === 200 ? 'ALIVE' : m.lastPingStatus === 0 ? 'FAIL' : 'INIT'}
                   </span>
-                  <span className="truncate">→ {new URL(m.url).hostname} ({m.lastPingDuration || 0}ms)</span>
+                  <span className="truncate flex-1">→ {new URL(m.url).hostname}</span>
+                  <span className="opacity-40 text-[8px]">{m.lastPingDuration || 0}ms</span>
                 </div>
               ))}
               {monitors.length === 0 && (
-                <div className="opacity-40 italic flex flex-col items-center justify-center h-full gap-1">
+                <div className="opacity-40 italic flex flex-col items-center justify-center h-full gap-1 text-center">
                   <Zap size={16} className="animate-pulse" />
-                  <p>Awaiting active handshake targets...</p>
+                  <p>Service active in background.<br/>Add a URL to begin handshake.</p>
                 </div>
               )}
+            </div>
+            <div className="mt-2 flex justify-between items-center text-[7px] uppercase font-black opacity-60 border-t border-black/10 pt-1">
+              <span>Cloud Run Persistence: ON</span>
+              <span>Deploy to Render/Railway for 24/7 pings</span>
             </div>
           </div>
         </div>

@@ -61,14 +61,24 @@ export function BrowserFrame({ url }: Props) {
         <div className="flex items-center gap-4 shrink-0">
           <div className="bg-black text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter flex items-center gap-2">
             <RotateCw size={10} className={countdown < 10 ? "animate-spin" : ""} />
-            {minutes}:{seconds.toString().padStart(2, '0')}
+            AUTO: {minutes}:{seconds.toString().padStart(2, '0')}
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={handleManualReload} className="bg-white border border-black p-1 rounded hover:bg-slate-100 transition-colors">
-              <RotateCw size={12} strokeWidth={3} />
+            <button 
+              onClick={handleManualReload} 
+              title="Manual Reload"
+              className="bg-white border-2 border-black p-1.5 rounded hover:bg-slate-100 transition-all active:translate-y-0.5 cursor-pointer"
+            >
+              <RotateCw size={14} strokeWidth={3} />
             </button>
-            <a href={url} target="_blank" rel="noreferrer" className="bg-white border border-black p-1 rounded hover:bg-slate-100 transition-colors">
-              <ExternalLink size={12} strokeWidth={3} />
+            <a 
+              href={url} 
+              target="_blank" 
+              rel="noreferrer" 
+              title="Open in New Tab"
+              className="bg-blue-500 text-white border-2 border-black p-1.5 rounded hover:bg-black transition-all active:translate-y-0.5"
+            >
+              <ExternalLink size={14} strokeWidth={3} />
             </a>
           </div>
         </div>
@@ -82,12 +92,15 @@ export function BrowserFrame({ url }: Props) {
           title="Remote View"
           referrerPolicy="no-referrer"
         />
-        <div className="absolute inset-0 pointer-events-none flex items-center justify-center p-8 text-center bg-black/5 opacity-0 hover:opacity-100 transition-opacity">
-           <div className="bg-white border-2 border-black p-4 rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] max-w-xs pointer-events-auto">
-             <p className="text-[10px] font-black uppercase text-red-500 mb-1">Security Restriction</p>
-             <p className="text-[10px] font-bold text-slate-600">
-               Some sites (like GitHub or Google) block embedding. 
-               The background pings WILL still work to keep them awake!
+        <div className="absolute inset-x-0 bottom-0 pointer-events-none flex items-center justify-center p-6 text-center">
+           <div className="bg-white border-2 border-black p-4 rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] max-w-md pointer-events-auto">
+             <p className="text-[10px] font-black uppercase text-indigo-600 mb-1 flex items-center justify-center gap-2">
+               <Globe size={12} /> Live Render Engine
+             </p>
+             <p className="text-[10px] font-bold text-slate-500">
+               If page is blank, it's due to site security policies (like GitHub). 
+               <br />
+               <span className="text-green-600 uppercase font-black tracking-widest">Background pings are active!</span>
              </p>
            </div>
         </div>
