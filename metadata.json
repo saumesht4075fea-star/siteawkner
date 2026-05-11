@@ -1,0 +1,6 @@
+{
+  "name": "UpKeep",
+  "description": "Technical dashboard for keeping free-tier deployments active through periodic pings and auto-reloading browser frames.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
