@@ -9,12 +9,12 @@ export default function App() {
   const [monitors, setMonitors] = useState<Monitor[]>([]);
   const [newUrl, setNewUrl] = useState("");
   const [newInterval] = useState(10); // Default 10m to stay under 15m sleep
-  const [selectedUrl, setSelectedUrl] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     fetchMonitors();
-    const interval = setInterval(fetchMonitors, 10000); // UI poll every 10s
+    const interval = setInterval(fetchMonitors, 5000); // Poll more frequently for logs
     return () => clearInterval(interval);
   }, []);
 
@@ -23,8 +23,10 @@ export default function App() {
       const res = await fetch("/api/monitors");
       const data = await res.json();
       setMonitors(data);
-      if (data.length > 0 && !selectedUrl) {
-        setSelectedUrl(data[0].url);
+      
+      // Auto-select if nothing selected
+      if (data.length > 0 && !selectedId) {
+        setSelectedId(data[0].id);
       }
     } catch (err) {
       console.error("Failed to fetch monitors", err);
@@ -43,7 +45,7 @@ export default function App() {
       });
       const data = await res.json();
       setMonitors((prev) => [...prev, data]);
-      setSelectedUrl(data.url);
+      setSelectedId(data.id);
       setNewUrl("");
     } catch (err) {
       console.error("Failed to add", err);
@@ -53,11 +55,10 @@ export default function App() {
   };
 
   const forceWakeup = async () => {
-    const selectedMonitor = monitors.find(m => m.url === selectedUrl);
-    if (!selectedMonitor) return;
+    if (!selectedId) return;
     setIsLoading(true);
     try {
-      await fetch(`/api/monitors/${selectedMonitor.id}/ping`, { method: "POST" });
+      await fetch(`/api/monitors/${selectedId}/ping`, { method: "POST" });
       await fetchMonitors(); // Refresh status
     } catch (err) {
       console.error("Force wakeup failed", err);
@@ -68,16 +69,17 @@ export default function App() {
 
   const deleteMonitor = async (id: string) => {
     try {
-      const monitorToDelete = monitors.find(m => m.id === id);
       await fetch(`/api/monitors/${id}`, { method: "DELETE" });
       setMonitors((prev) => prev.filter((m) => m.id !== id));
-      if (monitorToDelete?.url === selectedUrl) {
-        setSelectedUrl(null);
+      if (id === selectedId) {
+        setSelectedId(null);
       }
     } catch (err) {
       console.error("Failed to delete", err);
     }
   };
+
+  const selectedMonitor = monitors.find(m => m.id === selectedId);
 
   return (
     <div className="h-screen w-full bg-indigo-600 font-sans text-slate-900 flex flex-col p-3 sm:p-4 box-border overflow-hidden">
@@ -139,8 +141,8 @@ export default function App() {
                 {monitors.map((monitor) => (
                   <div 
                     key={monitor.id} 
-                    onClick={() => setSelectedUrl(monitor.url)}
-                    className={`cursor-pointer transition-all ${selectedUrl === monitor.url ? 'translate-x-1' : ''}`}
+                    onClick={() => setSelectedId(monitor.id)}
+                    className={`cursor-pointer transition-all ${selectedId === monitor.id ? 'translate-x-1 ring-2 ring-black rounded-xl' : ''}`}
                   >
                     <MonitorCard 
                       monitor={monitor} 
@@ -163,17 +165,17 @@ export default function App() {
           {/* Browser Container */}
           <div className="flex-1 bg-white border-4 border-black rounded-3xl shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] overflow-hidden flex flex-col relative min-h-0">
             <div className="bg-slate-100 border-b-2 border-black p-2 px-4 flex items-center justify-between">
-              <span className="text-[9px] font-black uppercase text-slate-500">Node Status: {selectedUrl ? 'Connected' : 'Idle'}</span>
+              <span className="text-[9px] font-black uppercase text-slate-500">Node Status: {selectedId ? 'Connected' : 'Idle'}</span>
               <button 
                 onClick={forceWakeup}
-                disabled={isLoading || !selectedUrl}
+                disabled={isLoading || !selectedId}
                 className="bg-indigo-600 text-white text-[9px] font-black uppercase px-3 py-1 rounded-lg border border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-y-0.5 transition-all disabled:opacity-50"
               >
                 {isLoading ? 'HANDSHAKING...' : 'FORCE WAKEUP'}
               </button>
             </div>
-            {selectedUrl ? (
-              <BrowserFrame url={selectedUrl} />
+            {selectedMonitor ? (
+              <BrowserFrame url={selectedMonitor.url} />
             ) : (
               <div className="flex-1 bg-slate-50 flex items-center justify-center p-10">
                 <div className="text-center">
