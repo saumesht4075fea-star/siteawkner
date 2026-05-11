@@ -35,7 +35,14 @@ export function MonitorCard({ monitor, onDelete }: Props) {
       <div className="flex items-center justify-between pt-2 border-t border-slate-100">
         <div className="flex items-center gap-2">
           <div className={`w-2 h-2 rounded-full border border-black ${statusColor}`} />
-          <span className="text-[10px] font-black uppercase">{monitor.lastPingStatus || "---"}</span>
+          <span className="text-[10px] font-black uppercase">
+            {monitor.lastPingStatus === 0 ? "OFFLINE" : (monitor.lastPingStatus || "---")}
+          </span>
+          {monitor.lastPingDuration && (
+            <span className="text-[8px] font-mono text-slate-400">
+              {monitor.lastPingDuration}ms
+            </span>
+          )}
         </div>
         <div className="text-[9px] font-bold text-slate-500">
           {monitor.lastPingTime ? new Date(monitor.lastPingTime).toLocaleTimeString() : "PENDING"}

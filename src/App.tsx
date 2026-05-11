@@ -158,21 +158,26 @@ export default function App() {
           </div>
 
           {/* Activity Logs Card */}
-          <div className="h-28 bg-teal-300 border-4 border-black rounded-2xl shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] p-3 flex flex-col">
+          <div className="h-32 bg-teal-300 border-4 border-black rounded-2xl shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] p-3 flex flex-col">
             <h4 className="text-[10px] font-black uppercase mb-1.5 flex items-center justify-between">
-              Live Node Logs
+              Live Network Handshake
               <Activity size={12} />
             </h4>
-            <div className="flex-1 overflow-y-auto space-y-1 font-mono text-[9px] leading-tight text-indigo-900 pr-1">
+            <div className="flex-1 overflow-y-auto space-y-1 font-mono text-[9px] leading-tight text-indigo-900 pr-1 custom-scrollbar">
               {monitors.map((m, idx) => (
-                <div key={`${m.id}-log-${idx}`} className="flex gap-2">
-                  <span className="opacity-60">[{m.lastPingTime ? new Date(m.lastPingTime).toLocaleTimeString() : 'INIT'}]</span>
-                  <span className="font-bold">{m.lastPingStatus === 200 ? 'SUCCESS:' : 'PENDING:'}</span>
-                  <span className="truncate">Ping delivered to {new URL(m.url).hostname}</span>
+                <div key={`${m.id}-log-${idx}`} className="flex gap-2 border-b border-black/5 pb-1 last:border-0">
+                  <span className="opacity-60 text-[8px]">[{m.lastPingTime ? new Date(m.lastPingTime).toLocaleTimeString() : 'WAIT'}]</span>
+                  <span className={`font-black ${m.lastPingStatus === 200 ? 'text-green-700' : 'text-red-700'}`}>
+                    {m.lastPingStatus === 200 ? 'ALIVE' : m.lastPingStatus === 0 ? 'FAIL' : 'PENDING'}
+                  </span>
+                  <span className="truncate">→ {new URL(m.url).hostname} ({m.lastPingDuration || 0}ms)</span>
                 </div>
               ))}
               {monitors.length === 0 && (
-                <div className="opacity-40 italic">Waiting for active nodes...</div>
+                <div className="opacity-40 italic flex flex-col items-center justify-center h-full gap-1">
+                  <Zap size={16} className="animate-pulse" />
+                  <p>Awaiting active handshake targets...</p>
+                </div>
               )}
             </div>
           </div>

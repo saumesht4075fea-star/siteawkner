@@ -17,6 +17,7 @@ async function startServer() {
     url: string;
     interval: number; // in minutes
     lastPingStatus: number | null;
+    lastPingDuration: number | null;
     lastPingTime: string | null;
     timer?: NodeJS.Timeout;
     isActive: boolean;
@@ -28,21 +29,24 @@ async function startServer() {
     const monitor = monitors.get(monitorId);
     if (!monitor || !monitor.isActive) return;
 
+    const start = Date.now();
     try {
       console.log(`[UpKeep] Pinging ${monitor.url}...`);
       const response = await fetch(monitor.url, {
         method: 'GET',
         headers: { 
-          'User-Agent': 'UpKeep-Bot/1.0',
+          'User-Agent': 'UpKeep-Bot/1.1 (Brutalist Alive Service)',
           'Cache-Control': 'no-cache'
         },
       });
       monitor.lastPingStatus = response.status;
+      monitor.lastPingDuration = Date.now() - start;
       monitor.lastPingTime = new Date().toISOString();
-      console.log(`[UpKeep] Successfully pinged ${monitor.url}: ${response.status}`);
+      console.log(`[UpKeep] Success: ${monitor.url} [${response.status}] in ${monitor.lastPingDuration}ms`);
     } catch (error: any) {
       console.error(`[UpKeep] Error pinging ${monitor.url}:`, error.message);
-      monitor.lastPingStatus = 0; // Error
+      monitor.lastPingStatus = 0; // Error / Offline
+      monitor.lastPingDuration = Date.now() - start;
       monitor.lastPingTime = new Date().toISOString();
     }
   };
